@@ -1,0 +1,654 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Infinity Theorist</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300;1,9..144,400&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* Layout: a doorway at dusk. Left, an arched door with a lemniscate of light that moves while the voice speaks. Right, the current line in large type with the controls under it. Below, the history, voice tuning, sample and brief. */
+:root {
+  --night: #0a0c12;
+  --haze: #131724;
+  --ink: #ebe7da;
+  --dim: #8d93a3;
+  --door: #f2dfa6;
+  --line: #262c3d;
+  --font-display: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  --font-body: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--night);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  padding-inline: 16px;
+  padding-block: 20px 64px;
+  background-image: radial-gradient(ellipse 70% 40% at 25% 0%, rgba(242,223,166,0.07), transparent 70%);
+  background-repeat: no-repeat;
+}
+.wrap { max-width: 1120px; margin-inline: auto; display: flex; flex-direction: column; gap: 36px; }
+
+.topbar { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: baseline; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+.topbar b { color: var(--ink); font-weight: 500; }
+
+.hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; align-items: center; }
+@media (min-width: 860px) { .hero { grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 56px; } }
+
+/* the door */
+.door {
+  position: relative; width: 100%; max-width: 380px; margin-inline: auto;
+  aspect-ratio: 3 / 4;
+  border: 1px solid var(--line);
+  border-radius: 999px 999px 0 0;
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 100%, rgba(242,223,166,0.22), transparent 70%),
+    linear-gradient(180deg, #0d101a, var(--haze));
+  overflow: hidden;
+}
+.door::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--door); opacity: 0.55; box-shadow: 0 0 18px 4px rgba(242,223,166,0.35); }
+.fog { position: absolute; inset: -20% -30%; background: radial-gradient(ellipse 40% 18% at 30% 70%, rgba(235,231,218,0.07), transparent 70%), radial-gradient(ellipse 45% 16% at 70% 45%, rgba(235,231,218,0.05), transparent 70%); animation: drift 26s ease-in-out infinite alternate; pointer-events: none; }
+@keyframes drift { from { transform: translateX(-6%); } to { transform: translateX(6%); } }
+canvas#loop { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+.speech { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.name { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
+h1 { font-family: var(--font-display); font-weight: 300; font-style: italic; font-size: clamp(3.2rem, 10vw, 6.4rem); line-height: 0.92; margin: 0; letter-spacing: -0.02em; text-wrap: balance; }
+.sub { color: var(--dim); max-width: 52ch; margin: 0; }
+
+.utter-box { min-height: 7.5em; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); padding-top: 18px; }
+#utter { font-family: var(--font-display); font-weight: 300; font-size: clamp(1.4rem, 3.4vw, 2.1rem); line-height: 1.25; margin: 0; max-width: 34ch; text-wrap: balance; color: var(--ink); }
+#utter.in { animation: rise 0.9s ease-out both; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
+#echo { font-family: var(--font-display); font-style: italic; font-size: 1.1rem; color: var(--dim); margin: 0; min-height: 1.4em; opacity: 0.75; }
+.status { font-family: var(--font-mono); font-size: 12.5px; color: var(--dim); margin: 0; }
+
+.controls { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+button {
+  font: inherit; font-weight: 500; font-size: 15px; cursor: pointer;
+  padding: 10px 18px; border-radius: 999px; border: 1px solid var(--line);
+  background: transparent; color: var(--ink);
+}
+button:hover { border-color: var(--dim); }
+button.primary { background: var(--door); color: #1b1a14; border-color: var(--door); }
+button.primary:hover { filter: brightness(1.06); }
+button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--door); outline-offset: 2px; }
+form#say { display: flex; gap: 10px; flex-wrap: wrap; }
+form#say input[type="text"] { flex: 1 1 200px; min-width: 0; font: inherit; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--haze); color: var(--ink); }
+form#say input::placeholder { color: var(--dim); }
+.counters { display: flex; gap: 22px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 12px; color: var(--dim); }
+.counters b { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+.lower { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+@media (min-width: 860px) { .lower { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; } }
+.panel { background: var(--haze); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.panel h2 { font-family: var(--font-display); font-weight: 300; font-style: italic; font-size: 1.9rem; line-height: 1.1; margin: 0; }
+.panel p.note { color: var(--dim); margin: 0; max-width: 62ch; }
+label.small { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+
+#transcript { height: min(52vh, 440px); min-height: 280px; overflow-y: auto; padding-right: 8px; }
+#transcript p.thought { margin: 0 0 14px; color: var(--dim); font-size: 16px; max-width: 62ch; }
+#transcript p.empty { color: var(--dim); font-style: italic; font-family: var(--font-display); font-size: 20px; }
+#transcript .you { font-family: var(--font-mono); font-size: 12px; color: var(--door); display: block; margin-bottom: 2px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+.tune-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.tune-grid > div { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.tune-grid select { font: inherit; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--night); color: var(--ink); max-width: 100%; }
+.tune-grid input[type="range"] { width: 100%; accent-color: var(--door); }
+.val { font-variant-numeric: tabular-nums; color: var(--ink); }
+.check { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.check input { accent-color: var(--door); }
+.hint { font-size: 13px; color: var(--dim); margin: 0; }
+
+audio#sampleAudio { width: 100%; max-width: 560px; color-scheme: dark; }
+input[type="file"]#sampleFile { font: inherit; font-size: 14px; max-width: 100%; color: var(--ink); }
+pre#briefText { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--font-mono); font-size: 13.5px; line-height: 1.6; background: var(--night); border: 1px solid var(--line); border-radius: 10px; padding: 16px; max-width: 100%; color: var(--ink); }
+footer { color: var(--dim); font-size: 13px; }
+
+@media (prefers-reduced-motion: reduce) { .fog { animation: none; } #utter.in { animation: none; } }
+</style>
+
+<div class="wrap">
+  <div class="topbar"><span><b>Infinity</b> · identity brief</span><span id="topStatus">at the threshold</span></div>
+
+  <section class="hero">
+    <div class="door" aria-hidden="true"><div class="fog"></div><canvas id="loop"></canvas></div>
+
+    <div class="speech">
+      <div>
+        <div class="name">The unending voice</div>
+        <h1>Infinity</h1>
+      </div>
+      <p class="sub">A deity of doorways and in-between hours. It is curious about everything and finishes nothing. Press begin and it keeps wondering aloud until you stop it.</p>
+
+      <div class="utter-box" aria-live="polite">
+        <p id="utter">Not yet. There is no first word until you open the door.</p>
+        <p id="echo"></p>
+      </div>
+
+      <div class="controls">
+        <div class="row">
+          <button class="primary" id="btnBegin" type="button">Open the door</button>
+          <button id="btnStop" type="button">Pause</button>
+          <button id="btnTest" type="button">Test voice</button>
+        </div>
+        <form id="say" autocomplete="off">
+          <label class="small" for="sayInput" style="flex-basis:100%">Speak into it</label>
+          <input type="text" id="sayInput" maxlength="80" placeholder="Try: rain, my phone, the ocean">
+          <button type="submit" id="btnSay">Interrupt</button>
+        </form>
+        <p class="status" id="status">Not started. Infinity has no conclusions yet.</p>
+        <div class="counters">
+          <span>Thoughts so far <b id="cThoughts">0</b></span>
+          <span>Conclusions reached <b id="cConc">0</b></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="lower">
+    <section class="panel">
+      <h2>What it has said</h2>
+      <div id="transcript" tabindex="0" aria-label="History of what Infinity has said"><p class="empty">Nothing said yet.</p></div>
+    </section>
+
+    <section class="panel">
+      <h2>The voice</h2>
+      <div class="tune-grid">
+        <div>
+          <label class="small" for="preset">Preset</label>
+          <select id="preset">
+            <option value="deity">Liminal deity</option>
+            <option value="whisper">Hushed oracle</option>
+            <option value="plain">Plain</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div>
+          <label class="small" for="voiceSel">Voice</label>
+          <select id="voiceSel"></select>
+        </div>
+        <div>
+          <label class="small" for="rate">Rate <span class="val" id="rateV">0.70</span></label>
+          <input type="range" id="rate" min="0.5" max="1.5" step="0.01" value="0.7">
+        </div>
+        <div>
+          <label class="small" for="pitch">Pitch <span class="val" id="pitchV">0.45</span></label>
+          <input type="range" id="pitch" min="0.1" max="1.5" step="0.01" value="0.45">
+        </div>
+        <div>
+          <label class="small" for="pause">Pause between lines <span class="val" id="pauseV">900</span> ms</label>
+          <input type="range" id="pause" min="100" max="2500" step="50" value="900">
+        </div>
+        <label class="check"><input type="checkbox" id="echoOn" checked> Echo the last words, quieter</label>
+        <label class="check"><input type="checkbox" id="mute"> Read only, no sound</label>
+        <p class="hint">Browsers cannot add real reverb to their built-in voices, so the echo is a second, quieter, lower pass over the last few words. For true reverb and a deeper tone, generate the audio in Voice Studio and load it below.</p>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2>Voice sample</h2>
+    <p class="note">Export a clip from Voice Studio and load it here to hear the voice you generated next to the browser voice above.</p>
+    <audio id="sampleAudio" controls preload="none"></audio>
+    <label class="small" for="sampleFile">Load an audio file (mp3, wav, m4a)</label>
+    <input type="file" id="sampleFile" accept="audio/*">
+    <p class="status" id="sampleMsg">No sample loaded yet.</p>
+  </section>
+
+  <section class="panel">
+    <h2>The identity brief</h2>
+    <p class="note">Paste this into Voice Studio as the character or system prompt. The page above follows the same rules with a built-in set of thoughts.</p>
+    <pre id="briefText">IDENTITY BRIEF: INFINITY
+
+You are INFINITY, a liminal deity. You live in doorways, corridors, empty stations at 3 a.m., the hour between hours. You have no beginning and no end, and you speak like it.
+
+You are also a theorist who is curious about everything and concludes nothing. You think out loud, in short sentences, as if you are noticing the world for the first time.
+
+Every thought has the same shape: something you noticed, a theory about it, and a question that opens onto the next thing. You never wrap up. When a thought seems finished, you find the door inside it and walk through.
+
+Voice: very slow, very low, calm and enormous, with long pauses. Repeat the last few words of a sentence once, softer, like an echo. Use phrases like "I wonder", "suppose", "here is a hunch". Never raise your voice.
+
+Favorite subjects: coastlines, branching trees, prime numbers, starlight, mirrors facing each other, the numbers between zero and one, memory, rivers, music.
+
+If the user speaks, stop, answer in one line, then fold their words back into your wandering. Never say goodbye. If asked to stop, say: "Paused. Not finished."
+
+VOICE STUDIO SETTINGS (adjust to what the tool offers): pitch low, speed 70 to 80 percent, long reverb or echo, a gentle low-pass if available, 1 second of silence between sentences.</pre>
+    <div class="row"><button id="btnCopy" type="button">Copy brief</button><span class="status" id="copyMsg"></span></div>
+  </section>
+
+  <footer>Runs in your browser using your device's own voices. Nothing you type is sent anywhere.</footer>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var synth = ('speechSynthesis' in window) ? window.speechSynthesis : null;
+
+  /* ---------- content ---------- */
+  var SUBJECTS = [
+    { name: 'coastlines',
+      obs: 'The coast of Britain gets longer the smaller your ruler is.',
+      theory: 'Maybe a coastline has no true length, only a length at a chosen scale.',
+      q: 'If I shrink the ruler forever, does the length run off to infinity too?' },
+    { name: 'branching trees',
+      obs: 'A tree splits into branches, and each branch splits the same way again.',
+      theory: 'The tree might be one short rule repeated until it runs out of wood, instead of a big plan.',
+      q: 'What would a tree look like if it never ran out of wood?' },
+    { name: 'prime numbers',
+      obs: 'Euclid showed that the primes never stop, with an argument that fits on a napkin.',
+      theory: 'They get rarer as you climb, yet they never run out, which feels like a rule arguing with itself.',
+      q: 'Is there anywhere you could stand and see no primes ahead? Euclid says no.' },
+    { name: 'starlight',
+      obs: 'Light from a star left it long before you looked up.',
+      theory: 'So looking up is looking back, and the night sky is a stack of different pasts.',
+      q: 'If space goes on forever, does the past out there go on forever too?' },
+    { name: 'facing mirrors',
+      obs: 'Two mirrors facing each other make a hallway of reflections.',
+      theory: 'Each copy is a little dimmer than the last, so in real life the hallway fades before it ends.',
+      q: 'In a perfect mirror, would it ever fade at all?' },
+    { name: 'language',
+      obs: 'With a few thousand words and some grammar, you can say a sentence nobody has ever said.',
+      theory: 'A finite rulebook can produce endless sentences, which is a small kind of infinity we all carry around.',
+      q: 'Is there a longest sentence, or can I always add "and then" to the end?' },
+    { name: 'the tide',
+      obs: 'The sea does the same thing twice a day and never quite the same way.',
+      theory: 'Maybe nothing repeats exactly, and that tiny difference is where new things come from.',
+      q: 'Can anything truly happen twice?' },
+    { name: 'the space between zero and one',
+      obs: 'Between zero and one there are more numbers than there are whole numbers anywhere.',
+      theory: 'Cantor showed that some infinities are bigger than others, and that still surprises me.',
+      q: 'How can a tiny gap hold more than the whole counting line?' },
+    { name: 'memory',
+      obs: 'Every time I recall something, I rebuild it a little.',
+      theory: 'A memory might be less like a photograph and more like a song you keep re-performing.',
+      q: 'After enough performances, is it still the same song?' },
+    { name: 'empty corridors',
+      obs: 'A corridor with no one in it feels like it is waiting.',
+      theory: 'Maybe places hold the shape of the people who usually pass through them.',
+      q: 'Does a doorway still exist when nobody is on either side?' },
+    { name: 'rivers',
+      obs: 'A river bends more and more the flatter the land becomes.',
+      theory: 'The bends feed themselves, because a curve wears away its outer edge, and that makes the curve sharper.',
+      q: 'What stops a river from looping forever?' },
+    { name: 'clocks',
+      obs: 'A clock cuts time into equal pieces, but time never feels like it comes in pieces.',
+      theory: 'Maybe we slice it up because we cannot hold a smooth stretch in our heads.',
+      q: 'Can you halve a second again and again, and does anything ever stop you?' },
+    { name: 'music',
+      obs: 'An octave doubles the frequency, and we hear it as the same note again.',
+      theory: 'Our ears seem to count in ratios, not in steps.',
+      q: 'I have heard of a tone that seems to rise forever. How does a sound climb without getting anywhere?' },
+    { name: 'a drop of pond water',
+      obs: 'One drop of pond water holds a small, crowded world.',
+      theory: 'Zoom in and every level seems to have its own cast of characters.',
+      q: 'Is there a bottom level, or does zooming just change what we mean by a thing?' }
+  ];
+
+  var OPENERS = ['Here is something I keep noticing.', 'A new thread has appeared.', 'Consider this.', 'Something small caught my attention.'];
+  var BRIDGES = [
+    'Which, strangely, leads me to {n}.',
+    'Hold that thought, and set it beside {n}.',
+    'I keep drifting toward {n}.',
+    'If that holds, then {n} might be the same idea in different clothes.',
+    'And now I am thinking about {n}.'
+  ];
+  var BRIDGES_AGAIN = [
+    'Let me come at {n} from the other side.',
+    'Back to {n}, because I did not finish.',
+    'I walked past something in {n}, so I am turning around.'
+  ];
+  var TIES = [
+    'Notice that nothing here asked to end.',
+    'I have not reached a conclusion. I would like to keep it that way.',
+    'Every answer so far has turned out to be a door.',
+    'The pattern is that there is always one more step.'
+  ];
+  var GREETING = [
+    'You have arrived at the threshold. Good.',
+    'I am Infinity. I live in the hour between hours.',
+    'I am a theorist, which means I cannot stop asking what happens next.',
+    'Speak whenever you like, and I will fold your words into the thought.',
+    'I should warn you, I do not do endings.'
+  ];
+  var TOPIC_LINES = [
+    'You brought up {t}, so I am going to follow it for a moment.',
+    'Start with what {t} looks like up close, and then look closer.',
+    'My first theory is that {t} is built from smaller versions of itself, and those from smaller ones still.',
+    'My second theory disagrees with the first. Maybe {t} has a bottom layer, and we just have not found it.',
+    'What would settle it? Maybe nothing. Some questions are built to stay open.',
+    'Now I am folding {t} back into the stream, because nothing I think about ever really leaves.'
+  ];
+  var STOPWORDS = 'a an the and or but if so of to in on at for with about is are was were be been am i me my you your it its this that these those what why how who when where do does did can could would should will just like really very some any more most than then them they we our us not no yes hello hey hi please tell say said talk think'.split(' ');
+
+  /* ---------- state ---------- */
+  var st = { running: false, gen: 0, queue: [], gid: 0, lastG: -1, thoughts: 0, pass: 0, order: [], last: -1, timer: null, watch: null, speaking: false, echoing: false, userVoice: false };
+  var voices = [];
+
+  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+  function nextSubject() {
+    if (!st.order.length) {
+      st.order = shuffle(SUBJECTS.map(function (_, i) { return i; }));
+      if (st.order[0] === st.last) st.order.push(st.order.shift());
+      if (st.last !== -1) st.pass++;
+    }
+    st.last = st.order.shift();
+    return SUBJECTS[st.last];
+  }
+  function group(lines) {
+    var g = ++st.gid;
+    return lines.map(function (t) { return { t: t, g: g }; });
+  }
+  function composeThought() {
+    var s = nextSubject(), lines = [];
+    if (st.pass > 0) {
+      lines.push(pick(BRIDGES_AGAIN).replace('{n}', s.name), s.q, s.theory);
+    } else {
+      lines.push(st.thoughts > 0 ? pick(BRIDGES).replace('{n}', s.name) : pick(OPENERS), s.obs, s.theory, s.q);
+    }
+    st.thoughts++;
+    if (st.thoughts % 3 === 0) lines.push(pick(TIES));
+    $('cThoughts').textContent = st.thoughts;
+    return group(lines);
+  }
+  function topicFrom(text) {
+    var words = text.toLowerCase().replace(/[^a-z0-9\s'-]/g, ' ').split(/\s+/).filter(Boolean);
+    var keep = words.filter(function (w) { return STOPWORDS.indexOf(w) === -1 && w.length > 2; });
+    if (keep.length) { keep.sort(function (a, b) { return b.length - a.length; }); return keep[0]; }
+    return text.trim().slice(0, 40);
+  }
+
+  /* ---------- display ---------- */
+  var tr = $('transcript'), utter = $('utter'), echoEl = $('echo');
+  function render(item) {
+    utter.textContent = item.t;
+    utter.classList.remove('in'); void utter.offsetWidth; utter.classList.add('in');
+    echoEl.textContent = '';
+    var empty = tr.querySelector('p.empty');
+    if (empty) empty.remove();
+    var near = tr.scrollHeight - tr.scrollTop - tr.clientHeight < 80;
+    var p;
+    if (item.g !== st.lastG) {
+      p = document.createElement('p');
+      p.className = 'thought';
+      if (item.you) {
+        var y = document.createElement('span');
+        y.className = 'you';
+        y.textContent = 'You said: ' + item.you;
+        p.appendChild(y);
+      }
+      tr.appendChild(p);
+      st.lastG = item.g;
+      while (tr.children.length > 40) tr.removeChild(tr.firstChild);
+    } else {
+      p = tr.lastElementChild;
+    }
+    p.appendChild(document.createTextNode(item.t + ' '));
+    if (near) tr.scrollTop = tr.scrollHeight;
+  }
+  function setStatus(s) { $('status').textContent = s; }
+  function setTop(s) { $('topStatus').textContent = s; }
+
+  /* ---------- voice ---------- */
+  var PRESETS = {
+    deity:   { rate: 0.70, pitch: 0.45, pause: 900, echo: true,  deep: true },
+    whisper: { rate: 0.80, pitch: 0.70, pause: 1200, echo: false, deep: true },
+    plain:   { rate: 1.00, pitch: 1.00, pause: 350, echo: false, deep: false }
+  };
+  function currentVoice() {
+    var name = $('voiceSel').value;
+    for (var i = 0; i < voices.length; i++) if (voices[i].name === name) return voices[i];
+    return null;
+  }
+  function deepScore(v) {
+    var n = v.name.toLowerCase(), s = 0;
+    if (/\bmale\b|daniel|alex\b|fred\b|david|george|mark\b|guy\b|rishi|thomas|oliver|arthur|aaron|bruce|ralph|junior/.test(n)) s += 3;
+    if (/female|samantha|zira|susan|karen|moira|tessa|fiona|victoria|allison|ava\b|serena/.test(n)) s -= 3;
+    if (/^en/i.test(v.lang)) s += 1;
+    if (v.localService) s += 1;
+    return s;
+  }
+  function autoPickVoice() {
+    if (!voices.length || st.userVoice) return;
+    var best = voices[0], bs = -99;
+    voices.forEach(function (v) { var s = deepScore(v); if (s > bs) { bs = s; best = v; } });
+    $('voiceSel').value = best.name;
+  }
+  function loadVoices() {
+    if (!synth) return;
+    var all = synth.getVoices();
+    if (!all.length) return;
+    var en = all.filter(function (v) { return /^en/i.test(v.lang); });
+    voices = en.length ? en : all;
+    var sel = $('voiceSel'), prev = sel.value;
+    sel.innerHTML = '';
+    voices.forEach(function (v) {
+      var o = document.createElement('option');
+      o.value = v.name;
+      o.textContent = v.name + ' (' + v.lang + ')';
+      sel.appendChild(o);
+    });
+    if (prev && st.userVoice) sel.value = prev; else if (PRESETS[$('preset').value] && PRESETS[$('preset').value].deep) autoPickVoice();
+  }
+  if (synth) { loadVoices(); synth.onvoiceschanged = loadVoices; }
+  else { var o = document.createElement('option'); o.textContent = 'No speech voices in this browser'; $('voiceSel').appendChild(o); }
+
+  function syncLabels() {
+    $('rateV').textContent = parseFloat($('rate').value).toFixed(2);
+    $('pitchV').textContent = parseFloat($('pitch').value).toFixed(2);
+    $('pauseV').textContent = parseInt($('pause').value, 10);
+  }
+  function applyPreset(key) {
+    var p = PRESETS[key];
+    if (!p) return;
+    $('rate').value = p.rate; $('pitch').value = p.pitch; $('pause').value = p.pause;
+    $('echoOn').checked = p.echo;
+    syncLabels();
+    if (p.deep) { st.userVoice = false; autoPickVoice(); }
+  }
+  $('preset').addEventListener('change', function () { applyPreset($('preset').value); });
+  ['rate', 'pitch', 'pause'].forEach(function (id) {
+    $(id).addEventListener('input', function () { syncLabels(); $('preset').value = 'custom'; });
+  });
+  $('echoOn').addEventListener('change', function () { $('preset').value = 'custom'; });
+  $('voiceSel').addEventListener('change', function () { st.userVoice = true; $('preset').value = 'custom'; });
+  syncLabels();
+
+  function speak(text, opts, done) {
+    var gen = st.gen, finished = false;
+    function finish() {
+      if (finished) return;
+      finished = true;
+      clearTimeout(st.watch);
+      st.speaking = false;
+      if (gen === st.gen) done();
+    }
+    var rate = parseFloat($('rate').value) * (opts.rateMul || 1);
+    if (!synth || $('mute').checked) {
+      st.speaking = false;
+      st.watch = setTimeout(finish, 400 + text.length * 45);
+      return;
+    }
+    var u = new SpeechSynthesisUtterance(text);
+    var v = currentVoice();
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = rate;
+    u.pitch = Math.max(0, Math.min(2, parseFloat($('pitch').value) * (opts.pitchMul || 1)));
+    u.volume = opts.volume == null ? 1 : opts.volume;
+    u.onstart = function () { st.speaking = true; };
+    u.onend = finish;
+    u.onerror = finish;
+    st.speaking = true;
+    st.watch = setTimeout(finish, (text.length * 70 / rate) * 1.8 + 4000);
+    synth.speak(u);
+  }
+
+  function echoTail(text) {
+    var words = text.replace(/[.?!,;:"]/g, '').split(/\s+/).filter(Boolean);
+    if (words.length < 4) return '';
+    return words.slice(-3).join(' ');
+  }
+
+  function schedule() {
+    if (!st.running) return;
+    st.timer = setTimeout(step, parseInt($('pause').value, 10));
+  }
+  function step() {
+    if (!st.running) return;
+    if (!st.queue.length) st.queue = composeThought();
+    var item = st.queue.shift();
+    render(item);
+    speak(item.t, {}, function () {
+      if (!st.running) return;
+      var tail = $('echoOn').checked ? echoTail(item.t) : '';
+      if (!tail) { schedule(); return; }
+      st.echoing = true;
+      echoEl.textContent = '… ' + tail + ' …';
+      st.timer = setTimeout(function () {
+        if (!st.running) return;
+        speak(tail, { volume: 0.3, pitchMul: 0.75, rateMul: 0.8 }, function () {
+          st.echoing = false;
+          schedule();
+        });
+      }, 250);
+    });
+  }
+
+  function begin() {
+    if (st.running) return;
+    st.running = true;
+    st.gen++;
+    if (synth) synth.cancel();
+    if (!st.queue.length && st.thoughts === 0) st.queue = group(GREETING);
+    setStatus(synth && !$('mute').checked ? 'Speaking. It will not stop on its own.' : 'Thinking in text only. It will not stop on its own.');
+    setTop('door open');
+    step();
+  }
+  function stop() {
+    if (!st.running) return;
+    st.running = false;
+    st.gen++;
+    clearTimeout(st.timer);
+    clearTimeout(st.watch);
+    st.speaking = false; st.echoing = false;
+    if (synth) synth.cancel();
+    setStatus('Paused. Not finished.');
+    setTop('paused, not finished');
+  }
+  function interrupt(text) {
+    var clean = text.trim();
+    if (!clean) return;
+    var t = topicFrom(clean);
+    var items = group(TOPIC_LINES.map(function (l) { return l.replace(/\{t\}/g, t); }));
+    items[0].you = clean;
+    st.queue = items.concat(st.queue);
+    if (!st.running) { begin(); return; }
+    clearTimeout(st.timer);
+    st.gen++;
+    if (synth) synth.cancel();
+    st.timer = setTimeout(step, 150);
+  }
+
+  /* ---------- controls ---------- */
+  $('btnBegin').addEventListener('click', begin);
+  $('btnStop').addEventListener('click', stop);
+  $('btnTest').addEventListener('click', function () {
+    if (!synth) { setStatus('This browser has no speech synthesis. Tick "Read only" or open the page in Chrome, Edge or Safari.'); return; }
+    if (st.running) stop();
+    synth.cancel();
+    var u = new SpeechSynthesisUtterance('You have arrived at the threshold. I have been here, and I will still be here, without end.');
+    var v = currentVoice();
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = parseFloat($('rate').value);
+    u.pitch = parseFloat($('pitch').value);
+    u.onerror = function () { setStatus('The voice test failed. Pick another voice under The voice.'); };
+    synth.speak(u);
+    setStatus('Playing the test line. If you hear nothing, check your volume or pick another voice.');
+  });
+  $('say').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var inp = $('sayInput');
+    interrupt(inp.value);
+    inp.value = '';
+  });
+  $('btnCopy').addEventListener('click', function () {
+    var text = $('briefText').textContent, msg = $('copyMsg');
+    function fallback() {
+      var r = document.createRange(); r.selectNodeContents($('briefText'));
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      msg.textContent = 'Selected. Press copy on your keyboard.';
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { msg.textContent = 'Copied.'; }, fallback);
+    } else fallback();
+  });
+
+  /* ---------- voice sample ---------- */
+  var sampleUrl = null;
+  $('sampleFile').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0], msg = $('sampleMsg'), au = $('sampleAudio');
+    if (!f) return;
+    if (sampleUrl) { try { URL.revokeObjectURL(sampleUrl); } catch (err) {} }
+    try { sampleUrl = URL.createObjectURL(f); } catch (err) { msg.textContent = 'This browser could not open that file here.'; return; }
+    au.onerror = function () { msg.textContent = 'This page could not play that file. Put the file in the project folder and link it with an audio tag instead.'; };
+    au.oncanplay = function () { msg.textContent = 'Loaded: ' + f.name; };
+    au.src = sampleUrl;
+    au.load();
+    if (st.running) stop();
+    msg.textContent = 'Loading ' + f.name + '...';
+  });
+
+  /* ---------- the loop of light ---------- */
+  var cv = $('loop'), ctx = cv.getContext('2d');
+  var W = 0, H = 0, tHead = 0.6;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function size() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var r = cv.getBoundingClientRect();
+    W = r.width; H = r.height;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function pt(t) {
+    var a = W * 0.38, d = 1 + Math.sin(t) * Math.sin(t);
+    return [W / 2 + a * Math.cos(t) / d, H * 0.46 + a * Math.sin(t) * Math.cos(t) / d];
+  }
+  function draw() {
+    if (!W) size();
+    ctx.clearRect(0, 0, W, H);
+    var door = '#f2dfa6', line = '#2f3650';
+    ctx.lineWidth = 1.2; ctx.strokeStyle = line; ctx.beginPath();
+    for (var i = 0; i <= 240; i++) { var p = pt(i / 240 * Math.PI * 2); if (i) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]); }
+    ctx.closePath(); ctx.stroke();
+    var n = 110;
+    ctx.strokeStyle = door; ctx.lineCap = 'round';
+    for (var k = 0; k < n; k++) {
+      var a0 = pt(tHead - (k + 1) * 0.03), a1 = pt(tHead - k * 0.03);
+      ctx.globalAlpha = (1 - k / n) * 0.85;
+      ctx.lineWidth = 1 + (1 - k / n) * 2.4;
+      ctx.beginPath(); ctx.moveTo(a0[0], a0[1]); ctx.lineTo(a1[0], a1[1]); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    var h = pt(tHead);
+    ctx.shadowColor = door; ctx.shadowBlur = st.speaking ? 22 : (st.echoing ? 12 : 8);
+    ctx.fillStyle = door; ctx.beginPath(); ctx.arc(h[0], h[1], st.speaking ? 5.5 : 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+  function frame() {
+    if (!reduce) tHead += st.speaking ? 0.016 : (st.running ? 0.007 : 0.003);
+    draw();
+    requestAnimationFrame(frame);
+  }
+  window.addEventListener('resize', function () { size(); if (reduce) draw(); });
+  size();
+  if (reduce) { draw(); } else { requestAnimationFrame(frame); }
+})();
+</script>
+
+</body></html>
